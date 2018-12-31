@@ -7,6 +7,9 @@
 VM vm;
 
 static void resetStack();
+static InterpretResult run();
+
+
 
 void initVM() {
     resetStack();
