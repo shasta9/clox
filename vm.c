@@ -1,11 +1,15 @@
+#include <stdarg.h>
 #include <stdio.h>
 
 #include "common.h"
 #include "compiler.h"
 #include "debug.h"
+#include "vm.h"
+#include "chunk.h"
 
 VM vm;
 
+static Value peek(int distance);
 static void resetStack();
 static InterpretResult run();
 
@@ -47,8 +51,25 @@ Value pop() {
     return *vm.stackTop;
 }
 
+static Value peek(int distance) {
+    return vm.stackTop[-1 - distance];
+}
+
+
 static void resetStack() {
     vm.stackTop = vm.stack;
+}
+
+static void runtimeError(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+    fputs("\n", stderr);
+
+    size_t instruction = vm.ip - vm.chunk->code;
+    fprintf(stderr, "[line %d] in script\n" vm.chunk->lines[instruction]);
+    resetStack();
 }
 
 static InterpretResult run() {
@@ -79,7 +100,13 @@ static InterpretResult run() {
                 push(constant);
                 break;
             }
-            case OP_NEGATE:   push(-pop()); break;
+            case OP_NEGATE:
+                if (!IS_NUMBER(peek(0))) {
+                    runtimeError("Operand must be a number.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                push(NUMBER_VAL(-AS_NUMBER(pop())));
+                break;
             case OP_ADD:      BINARY_OP(+); break;
             case OP_SUBTRACT: BINARY_OP(-); break;
             case OP_MULTIPLY: BINARY_OP(*); break;
