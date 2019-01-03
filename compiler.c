@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "object.h"
+#include "vm.h"
 #include "common.h"
 #include "compiler.h"
 #include "scanner.h"
@@ -49,6 +51,7 @@ static void binary();
 static void literal();
 static void grouping();
 static void number();
+static void string();
 static void unary();
 static void parsePrecedence(Precedence precedence);
 static ParseRule* getRule(TokenType type);
@@ -84,7 +87,7 @@ ParseRule rules[] = {
       { NULL,     binary,  PREC_COMPARISON }, // TOKEN_LESS
       { NULL,     binary,  PREC_COMPARISON }, // TOKEN_LESS_EQUAL
       { NULL,     NULL,    PREC_NONE },       // TOKEN_IDENTIFIER
-      { NULL,     NULL,    PREC_NONE },       // TOKEN_STRING
+      { string,   NULL,    PREC_NONE },       // TOKEN_STRING
       { number,   NULL,    PREC_NONE },       // TOKEN_NUMBER
       { NULL,     NULL,    PREC_AND },        // TOKEN_AND
       { NULL,     NULL,    PREC_NONE },       // TOKEN_CLASS
@@ -198,6 +201,11 @@ static void grouping() {
 static void number() {
     double value = strtod(parser.previous.start, NULL);
     emitConstant(NUMBER_VAL(value));
+}
+
+static void string() {
+    emitConstant(OBJ_VAL(copyString(parser.previous.start + 1,
+                                    parser.previous.length - 2)));
 }
 
 static void unary() {
