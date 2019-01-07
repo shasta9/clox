@@ -28,8 +28,14 @@ void printObject(Value value) {
     }
 }
 
+ObjString* takeString(char* chars, int length) {
+    return allocateString(chars, length);
+}
+
 static ObjString* allocateString(char* chars, int length) {
     ObjString* string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
+    string->length = length;
+    string->chars = chars;
     return string;
 }
 
